@@ -146,9 +146,11 @@ class XORNet:
             z_h, a_h, z_o, a_o = self._forward(X)
 
             # Delta vystupnej vrstvy: dL/dz_o
+            # chybovy signal v neuronoch vystupnej vrstvy
             delta_o = (a_o - y) * _sigmoid_d(z_o)              # (N,)
 
             # Delta skrytej vrstvy: dL/dz_h
+            # prenasa chybovy signal z vystupnej vrstvy do skrytej vrstvy
             delta_h = np.outer(delta_o, self.w_output) * _sigmoid_d(z_h)  # (N, 2)
 
             # Aktualizacia vystupnej vrstvy

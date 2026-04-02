@@ -11,17 +11,26 @@ def main():
     # 2. Preveď ternárne návestia (-1, 0, +1) na binárne (-1, +1)
     binary = to_binary(labels)
 
-    # 3. Zostav maticu príznakov (N × 2)
-    X = np.column_stack([xs, ys])
+    # 3. Matica príznakov
+    X_train = np.column_stack([xs, ys])
 
-    # 4. Natrénuj perceptrón
+    # 4. Trénovanie perceptronu
     perc = Perceptron(learning_rate=0.1, n_epochs=50)
-    perc.fit(X, binary)
+    perc.fit(X_train, binary)
 
-    print(f"Finálna presnosť: {perc.accuracy(X, binary):.1%}")
+    print(f"Presnosť na trénovacej sade: {perc.accuracy(X_train, binary):.1%}")
 
-    # 5. Spusti interaktívnu animáciu
-    run_animation(xs, ys, labels, binary, perc, slope=3, intercept=2)
+    # 5. Testovacie dáta
+    xs_test, ys_test, labels_test = generate_points(n=100, seed=99)
+    binary_test = to_binary(labels_test)
+    X_test = np.column_stack([xs_test, ys_test])
+
+    print(f"Presnosť na testovacej sade:  {perc.accuracy(X_test, binary_test):.1%}")
+
+    # 6. Animácia
+    run_animation(xs, ys, labels, binary, perc, slope=3, intercept=2,
+                  xs_test=xs_test, ys_test=ys_test,
+                  labels_test=labels_test, binary_test=binary_test)
 
 
 if __name__ == "__main__":

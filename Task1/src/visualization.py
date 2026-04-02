@@ -12,39 +12,8 @@ COLOR_BOUND = "#e67e22"   # oranzova – rozhodovacia hranica
 COLOR_TRUE  = "#2c3e50"   # tmava    – skutocna priamka
 
 
-def run_animation(
-    xs: np.ndarray,
-    ys: np.ndarray,
-    true_labels: np.ndarray,
-    binary_labels: np.ndarray,
-    perceptron,
-    slope: float = 3,
-    intercept: float = 2,
-    interval_ms: int = 300,
-) -> None:
-    """Zobrazi animaciu trenovania perceptronu v jednom grafe."""
-
-    x_min = float(xs.min()) - 0.5
-    x_max = float(xs.max()) + 0.5
-    x_line = np.linspace(x_min, x_max, 300)
-
-    # Predpocitaj hranice pre vsetky epochy
-    boundary_ys = [
-        perceptron.boundary_y(x_line, epoch=i)
-        for i in range(len(perceptron.history))
-    ]
-    n_epochs = len(perceptron.history) - 1
-
-    # ── Figura
-    fig, ax = plt.subplots(figsize=(10, 7))
-    plt.subplots_adjust(bottom=0.22)
-
-    fig.suptitle(
-        f"Perceptron  —  y = {slope}x + {intercept}",
-        fontsize=14, fontweight="bold",
-    )
-
-    # Body podla skutocneho navestia
+def _setup_scatter(ax, xs, ys, true_labels, x_line, slope, intercept):
+    """Vykresli body a skutocnu priamku do zadaneho grafu."""
     mask_above = true_labels == 1
     mask_below = true_labels == -1
     mask_on    = true_labels == 0
@@ -59,35 +28,109 @@ def run_animation(
         ax.scatter(xs[mask_on], ys[mask_on], c=COLOR_ON,
                    s=55, marker="*", label="Na priamke (0)", zorder=4, alpha=0.9)
 
-    # Skutocna priamka
     ax.plot(x_line, slope * x_line + intercept,
             color=COLOR_TRUE, linewidth=1.5, linestyle="-",
             label="Skutocna priamka", zorder=2)
 
-    # Rozhodovacia hranica (animovana)
-    (bound_line,) = ax.plot(
-        [], [], color=COLOR_BOUND, linewidth=2, linestyle="--",
-        label="Rozhodovacia hranica", zorder=5,
-    )
-
-    # Info text
-    info_text = ax.text(
-        0.98, 0.97, "",
-        transform=ax.transAxes, ha="right", va="top",
-        fontsize=10, family="monospace",
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
-                  edgecolor="#cccccc", alpha=0.9),
-    )
-
+    all_y = np.concatenate([ys, slope * x_line + intercept])
+    margin = (all_y.max() - all_y.min()) * 0.1
+    ax.set_ylim(all_y.min() - margin, all_y.max() + margin)
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.legend(loc="upper left", fontsize=8)
     ax.grid(True, alpha=0.3)
 
-    # Y-limity
-    all_y = np.concatenate([ys, slope * x_line + intercept])
-    margin = (all_y.max() - all_y.min()) * 0.1
-    ax.set_ylim(all_y.min() - margin, all_y.max() + margin)
+
+def run_animation(
+    xs: np.ndarray,
+    ys: np.ndarray,
+    true_labels: np.ndarray,
+    binary_labels: np.ndarray,
+    perceptron,
+    slope: float = 3,
+    intercept: float = 2,
+    interval_ms: int = 300,
+    xs_test: np.ndarray | None = None,
+    ys_test: np.ndarray | None = None,
+    labels_test: np.ndarray | None = None,
+    binary_test: np.ndarray | None = None,
+) -> None:
+    """Zobrazi animaciu trenovania perceptronu + vysledok na testovacich datach."""
+
+    has_test = xs_test is not None
+
+    x_min = float(xs.min()) - 0.5
+    x_max = float(xs.max()) + 0.5
+    if has_test:
+        x_min = min(x_min, float(xs_test.min()) - 0.5)
+        x_max = max(x_max, float(xs_test.max()) + 0.5)
+    x_line = np.linspace(x_min, x_max, 300)
+
+    # Predpocitaj hranice pre vsetky epochy
+    boundary_ys = [
+        perceptron.boundary_y(x_line, epoch=i)
+        for i in range(len(perceptron.history))
+    ]
+    n_epochs = len(perceptron.history) - 1
+
+    # ── Figura
+    ncols = 2 if has_test else 1
+    fig, axes = plt.subplots(1, ncols, figsize=(7 * ncols, 7))
+    plt.subplots_adjust(bottom=0.22)
+
+    if not has_test:
+        axes = [axes]
+
+    ax_train = axes[0]
+    ax_train.set_title("Trenovacia sada", fontsize=12, fontweight="bold")
+
+    fig.suptitle(
+        f"Perceptron  —  y = {slope}x + {intercept}",
+        fontsize=14, fontweight="bold",
+    )
+
+    # Trenovacie body
+    _setup_scatter(ax_train, xs, ys, true_labels, x_line, slope, intercept)
+
+    # Rozhodovacia hranica (animovana)
+    (bound_line,) = ax_train.plot(
+        [], [], color=COLOR_BOUND, linewidth=2, linestyle="--",
+        label="Rozhodovacia hranica", zorder=5,
+    )
+
+    # Info text
+    info_text = ax_train.text(
+        0.98, 0.97, "",
+        transform=ax_train.transAxes, ha="right", va="top",
+        fontsize=10, family="monospace",
+        bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
+                  edgecolor="#cccccc", alpha=0.9),
+    )
+
+    ax_train.legend(loc="upper left", fontsize=8)
+
+    # ── Testovaci graf
+    if has_test:
+        ax_test = axes[1]
+        ax_test.set_title("Testovacia sada", fontsize=12, fontweight="bold")
+        _setup_scatter(ax_test, xs_test, ys_test, labels_test, x_line, slope, intercept)
+
+        # Finalna rozhodovacia hranica
+        final_by = boundary_ys[-1]
+        if final_by is not None:
+            ax_test.plot(x_line, final_by, color=COLOR_BOUND, linewidth=2,
+                         linestyle="--", label="Rozhodovacia hranica", zorder=5)
+
+        X_test = np.column_stack([xs_test, ys_test])
+        test_acc = perceptron.accuracy(X_test, binary_test)
+        ax_test.text(
+            0.98, 0.97, f"Acc: {test_acc:.1%}",
+            transform=ax_test.transAxes, ha="right", va="top",
+            fontsize=10, family="monospace",
+            bbox=dict(boxstyle="round,pad=0.4", facecolor="white",
+                      edgecolor="#cccccc", alpha=0.9),
+        )
+        ax_test.legend(loc="upper left", fontsize=8)
 
     # ── Stav ───────────────────────────────────────────────────────────────
     state = {"epoch": 0, "playing": False, "_updating": False}

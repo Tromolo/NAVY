@@ -22,13 +22,13 @@ class HopfieldNetwork:
         if pattern.shape != (self.n,):
             raise ValueError("Pattern has wrong size")
         self.stored_patterns.append(pattern.copy())
-        self.W += np.outer(pattern, pattern)
-        np.fill_diagonal(self.W, 0.0)
+        self.W += np.outer(pattern, pattern) # vonkajsi produkt vzoru s jeho transponovanym vzorom
+        np.fill_diagonal(self.W, 0.0) # vyplnime diagonalu nulami
 
     def _sync_update(self, state: np.ndarray) -> np.ndarray:
         """Jeden synchronny krok – aktualizacia vsetkych neuronov naraz."""
-        net = self.W @ state
-        return np.where(net >= 0, 1.0, -1.0)
+        net = self.W @ state # vypocita aktivacie pre vsetky neurony naraz
+        return np.where(net >= 0, 1.0, -1.0) 
 
     def recover_sync(self, state: np.ndarray, max_iters: int = 20) -> np.ndarray:
         """Synchronna obnova – vsetky neurony naraz az do konvergencie."""
@@ -47,6 +47,6 @@ class HopfieldNetwork:
 
         for _ in range(max_iters):
             i = int(rng.integers(0, self.n))
-            net_i = float(self.W[i, :] @ current)
-            current[i] = 1.0 if net_i >= 0 else -1.0
+            net_i = float(self.W[i, :] @ current) # vypocita aktivacie pre dany neuron
+            current[i] = 1.0 if net_i >= 0 else -1.0 
         return current

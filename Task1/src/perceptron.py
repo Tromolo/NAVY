@@ -81,6 +81,7 @@ class Perceptron:
           =>  y = -(w0*x + b) / w1
 
         Vracia None ak w1 priblizne 0 (vertikalna / degenerovana hranica).
+        Slúži na vizualizáciu rozhodovacej hranice perceptronu v animácii.
         """
         snap = self.history[epoch]
         w = snap["weights"]

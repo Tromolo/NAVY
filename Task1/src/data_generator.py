@@ -5,7 +5,6 @@ INTERCEPT = 2
 ON_TOLERANCE = 0.15
 
 
-
 def line_y(x: np.ndarray | float,
            slope: float = SLOPE,
            intercept: float = INTERCEPT) -> np.ndarray | float:
