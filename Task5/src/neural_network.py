@@ -3,7 +3,7 @@ import numpy as np
 
 class NeuralNetwork:
     """
-    Neuronova siet s 2 skrytymi vrstvami implementovana od nuly v NumPy.
+    Neuronova siet s 2 skrytymi vrstvami.
 
     Architektura: vstup(4) -> skryta1(32, ReLU) -> skryta2(16, ReLU) -> vystup(2, Softmax)
 
