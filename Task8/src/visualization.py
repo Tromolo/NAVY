@@ -4,7 +4,6 @@ import numpy as np
 from .fractal import mandelbrot, julia
 
 
-# Vytvor custom colormapu s HSV farbami (hue + saturacia)
 def create_fractal_cmap():
     colors = [
         (0.0, 0.0, 0.0),       # cierna (body v mnozine)
