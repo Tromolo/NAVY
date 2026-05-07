@@ -1,11 +1,20 @@
 import tkinter as tk
 from tkinter import ttk, colorchooser, messagebox
 
-from .fractal import midpoint_displacement
+from .fractal import midpoint_displacement, midpoint_displacement_steps
 
 
 CANVAS_WIDTH = 901
 CANVAS_HEIGHT = 600
+
+
+# tri vrstvy ktore sa nakreslia automaticky pri spusteni
+# poradie zalezi - od pozadia (vzdialene hory) po popredie (tava)
+DEFAULT_LAYERS = [
+    {"start_y": 350, "end_y": 320, "iters": 7, "offset": 50, "color": "#6b7a99"},  # vzdialene hory
+    {"start_y": 430, "end_y": 420, "iters": 8, "offset": 30, "color": "#4a7a3a"},  # kopce
+    {"start_y": 500, "end_y": 510, "iters": 9, "offset": 20, "color": "#2d5a1e"},  # tava
+]
 
 
 class FractalTerrainGUI:
@@ -22,6 +31,8 @@ class FractalTerrainGUI:
 
         self.selected_color = "#008000"  # default zelena
         self._build_ui()
+        # nakresli 3 vrstvy automaticky pri spusteni
+        self._draw_default_landscape()
 
     def _build_ui(self) -> None:
         # platno - lava strana
@@ -69,6 +80,9 @@ class FractalTerrainGUI:
         tk.Button(panel, text="Clear canvas", bg="#f7c5c5",
                   command=self._clear).grid(row=16, column=0, sticky="w", pady=2)
 
+        tk.Button(panel, text="Default 3 vrstvy", bg="#cfe2ff",
+                  command=self._draw_default_landscape).grid(row=17, column=0, sticky="w", pady=2)
+
     def _pick_color(self) -> None:
         result = colorchooser.askcolor(initialcolor=self.selected_color, title="Vyber farbu")
         if result and result[1]:
@@ -114,6 +128,63 @@ class FractalTerrainGUI:
 
     def _clear(self) -> None:
         self.canvas.delete("all")
+
+    def _polygon_flat(self, points):
+        """Z bodov vyrobi flat list pre canvas.create_polygon (uzavre k spodu)."""
+        flat = []
+        for x, y in points:
+            flat.extend([x, y])
+        flat.extend([points[-1][0], CANVAS_HEIGHT])
+        flat.extend([points[0][0], CANVAS_HEIGHT])
+        return flat
+
+    def _animate_layer(self, sx, sy, ex, ey, iters, offset, color,
+                       step_delay_ms, on_done) -> None:
+        """Animuje jednu vrstvu - po kazdej iteracii prekresli polygon."""
+        states = midpoint_displacement_steps((sx, sy), (ex, ey), iters, offset)
+        # placeholder polygon - tag aby sme ho mohli aktualizovat
+        tag = f"layer_{id(states)}"
+
+        def step(i: int) -> None:
+            if i >= len(states):
+                on_done()
+                return
+            self.canvas.delete(tag)
+            self.canvas.create_polygon(
+                self._polygon_flat(states[i]),
+                fill=color, outline=color, tags=tag,
+            )
+            self.root.after(step_delay_ms, lambda: step(i + 1))
+
+        step(0)
+
+    def _draw_layer(self, sx: float, sy: float, ex: float, ey: float,
+                    iters: int, offset: float, color: str) -> None:
+        """Vykresli vrstvu naraz (bez animacie) - pre Draw tlacidlo."""
+        points = midpoint_displacement((sx, sy), (ex, ey), iters, offset)
+        self.canvas.create_polygon(self._polygon_flat(points),
+                                   fill=color, outline=color)
+
+    def _draw_default_landscape(self) -> None:
+        """Animovane vykresli 3 vrstvy - hory, kopce, tava (postupne)."""
+        self.canvas.delete("all")
+        # nebo - svetlomodre pozadie
+        self.canvas.create_rectangle(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT,
+                                     fill="#87ceeb", outline="")
+
+        # rekurzivne spustaj vrstvy jednu po druhej
+        def run_layer(idx: int) -> None:
+            if idx >= len(DEFAULT_LAYERS):
+                return
+            cfg = DEFAULT_LAYERS[idx]
+            self._animate_layer(
+                0, cfg["start_y"], CANVAS_WIDTH, cfg["end_y"],
+                cfg["iters"], cfg["offset"], cfg["color"],
+                step_delay_ms=180,
+                on_done=lambda: run_layer(idx + 1),
+            )
+
+        run_layer(0)
 
 
 def run_gui() -> None:

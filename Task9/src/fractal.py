@@ -47,6 +47,34 @@ def midpoint_displacement(start: Point, end: Point, iterations: int,
     return points
 
 
+def midpoint_displacement_steps(start: Point, end: Point, iterations: int,
+                                offset: float, roughness: float = 0.5) -> List[List[Point]]:
+    """Vrati zoznam stavov po kazdej iteracii (vratane pociatocnej priamky).
+
+    Pouzitelne pre animaciu - postupne sa zobrazuje rastuci pocet bodov.
+    """
+    points: List[Point] = [start, end]
+    states: List[List[Point]] = [list(points)]
+    current_offset = offset
+
+    for _ in range(iterations):
+        new_points: List[Point] = []
+        for i in range(len(points) - 1):
+            p1 = points[i]
+            p2 = points[i + 1]
+            mid_x = (p1[0] + p2[0]) / 2.0
+            mid_y = (p1[1] + p2[1]) / 2.0
+            mid_y += random.uniform(-current_offset, current_offset)
+            new_points.append(p1)
+            new_points.append((mid_x, mid_y))
+        new_points.append(points[-1])
+        points = new_points
+        states.append(list(points))
+        current_offset *= roughness
+
+    return states
+
+
 def generate_landscape(start: Point, end: Point, layers_config: List[dict]) -> List[List[Point]]:
     """Generuj viacvrstvovy terain (pozadie az popredie).
 
